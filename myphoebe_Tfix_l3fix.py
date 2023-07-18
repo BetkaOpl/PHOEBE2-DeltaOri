@@ -2,7 +2,7 @@
 # coding: utf-8
 
 __author__ = "Alzbeta Oplitilova (betsimsim@seznam.cz)"
-__version__ = "Apr 20th 2022"
+__version__ = "Apr 25th 2022"
 
 import time
 import numpy as np
@@ -25,11 +25,12 @@ class Myphoebe(object):
     self.debug    = debug
 
     # Input data
-    tb, mb_obs, mb_err, nb     = np.loadtxt('BRITE_BLUE_1LC.dat', unpack=True, usecols=[0, 1, 2, 4])
-    tr, mr_obs, mr_err, nr     = np.loadtxt('BRITE_RED_1LC.dat',  unpack=True, usecols=[0, 1, 2, 4])
-    t1, rv1_obs, rv1_err, nrv1 = np.loadtxt('RV1.dat',            unpack=True, usecols=[0, 1, 2, 4])
-    t2, rv2_obs, rv2_err, nrv2 = np.loadtxt('RV2.dat',            unpack=True, usecols=[0, 1, 2, 4])
-
+    tb, mb_obs, mb_err         = np.loadtxt('season_2016_B.dat', unpack=True, usecols=[0, 1, 2])
+    tr, mr_obs, mr_err         = np.loadtxt('season_2016_R.dat',  unpack=True, usecols=[0, 1, 2])
+    t1, rv1_obs, rv1_err, nrv1 = np.loadtxt('RV1.dat',         unpack=True, usecols=[0, 1, 2, 4])
+    t2, rv2_obs, rv2_err, nrv2 = np.loadtxt('RV2.dat',         unpack=True, usecols=[0, 1, 2, 4])
+    nb = len(tb)*[3]
+    nr = len(tr)*[4]
     print(len(tb), len(tr), len(t1), len(t2))
     print('Number of data points: ', len(tb)+len(tr)+len(t1)+len(t2))
 
@@ -39,8 +40,8 @@ class Myphoebe(object):
     fluxr_err = fluxr_obs*(10**(0.4*mr_err)-1)
 
     # Errors multiplied by factors
-    fluxb_err *= 5.0
-    fluxr_err *= 5.0
+    fluxb_err *= 1.0
+    fluxr_err *= 1.0
     rv1_err   *= 5.0
     rv2_err   *= 5.0
 
@@ -71,9 +72,9 @@ class Myphoebe(object):
     self.b.set_value('l3_mode', 'fraction', dataset='lcB')
     self.b.set_value('l3_mode', 'fraction', dataset='lcR')
 
-    if self.l3_fixed:
-        self.b.set_value('l3_frac',      0.273, dataset='lcB')  # computed by Pyterpol
-        self.b.set_value('l3_frac',      0.273, dataset='lcR')
+
+    self.b.set_value('l3_frac',      0.273, dataset='lcB')  # computed by Pyterpol
+    self.b.set_value('l3_frac',      0.273, dataset='lcR')
 
     # Other parameters
     self.b.set_value('atm', component='primary',   value='blackbody')
@@ -261,19 +262,19 @@ class Myphoebe(object):
 
     '''
 
-    T0    = 2457733.824876185507     # d
-    T1    = 27079.6426382378776907   # K
-    T2    = 20851.20634158405664     # K
-    R1    = 13.50883415032292945     # R_Sol
-    R2    = 3.825274099025570251     # R_Sol
-    I     = 77.61956864686750635     # deg
-    SA    = 1.023568130179173252     # 1
-    SB    = 1.024848843136050736     # 1
-    M1    = 19.51535083586710329     # M_Sol
-    M2    = 8.905782406623607983     # M_Sol
-    e     = 0.081127844206919833     # 1
-    omega = 139.9798807596344261     # deg
-    gamma = 0.01330919526709171963   # km/s
+    T0    = 2.457733832069228403e+06 # d
+    T1    = 31000                    # K
+    T2    = 2.300487325165610673e+04 # K
+    R1    = 1.300050992519212301e+01 # R_Sol
+    R2    = 3.518456999970553056e+00 # R_Sol
+    I     = 7.899536084293993099e+01 # deg
+    SA    = 1.01                      # 1
+    SB    = 1.01                      # 1
+    M1    = 1.805327006766689379e+01 # M_Sol
+    M2    = 8.452839824478584063e+00 # M_Sol
+    e     = 8.415383731810970047e-02 # 1
+    omega = 1.352096725106314636e+02 # deg
+    gamma = -2.665721800506149375e+0 # km/s
 
     theta = T0,T2,R1,R2,I,SA,SB,M1,M2,e,omega,gamma
 
@@ -303,7 +304,7 @@ class Myphoebe(object):
                    3     < M2    < 20    and \
                    0     < e     < 0.2   and \
                    90    < omega < 180   and \
-                   -5    < gamma < 35    and \
+                   -5    < gamma < 35:
         return 0.0
     else:
         return -np.inf
@@ -329,7 +330,7 @@ class Myphoebe(object):
     M2    = 3
     e     = 0
     omega = 90
-    gamma = 0
+    gamma = -5
     l3B   = 0.15
     l3R   = 0.15
 
@@ -365,7 +366,7 @@ class Myphoebe(object):
 
     return theta
 
-def run_nlopt(myphoebe, algorithm=nlopt.LN_SBPLX, ftol=1e-6, maxeval=1000):
+def run_nlopt(myphoebe, algorithm=nlopt.LN_NELDERMEAD, ftol=1e-6, maxeval=2000):
   '''
 
   Run optimisation.
@@ -522,9 +523,9 @@ def main():
   myphoebe.model(theta)
   myphoebe.chi2(theta)
 
-  #run_nlopt(myphoebe)
+  run_nlopt(myphoebe)
 
-  run_mcmc(myphoebe)
+  #run_mcmc(myphoebe)
 
 #  print(vars(myphoebe))  # dbg
 
